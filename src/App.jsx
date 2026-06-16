@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
+import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { invoke } from "./localDb";
@@ -9,6 +11,17 @@ import { invoke } from "./localDb";
 const SpeechRecognitionApi = typeof window !== "undefined"
   ? (window.SpeechRecognition || window.webkitSpeechRecognition)
   : null;
+
+// Human-readable heading for each report view (shared by the on-screen title
+// and the PDF export).
+const labelForViewMode = (mode) =>
+  mode === "graf" ? "Tid per år"
+    : mode === "tid" ? "Tid"
+    : mode === "fenologi" ? "Fenologi"
+    : mode === "landskap" ? "Landskap"
+    : mode === "kommun" ? "Kommun"
+    : mode === "karta" ? "Karta"
+    : "Resultat";
 
 function MapViewportController({ targetBounds, viewportToken, mapRefExternal }) {
   const map = useMap();
@@ -205,6 +218,7 @@ export default function TrollslandeApp() {
   const currentSortFieldRef = useRef("date");
   const currentSortDirectionRef = useRef("asc");
   const mapRef = useRef(null);
+  const reportRef = useRef(null);
   const initialMapBoundsRef = useRef(null);
   const [mapTargetBounds, setMapTargetBounds] = useState(null);
   const [mapViewportToken, setMapViewportToken] = useState(0);
@@ -784,7 +798,7 @@ export default function TrollslandeApp() {
 
     if (normalizedTranscript.includes("exportera")) {
       exportRequested = true;
-      changed.push("Exportera till Excel");
+      changed.push("Exportera");
     }
     if (normalizedTranscript.includes("ta bort kommun")) {
       nextMunicipalities.length = 0;
@@ -985,10 +999,14 @@ export default function TrollslandeApp() {
     }
 
     if (exportRequested) {
-      if (currentViewModeRef.current === "lista" && currentResultsRef.current.length > 0) {
-        exportToExcel(currentResultsRef.current, currentViewModeRef.current);
+      if (currentViewModeRef.current === "lista") {
+        if (currentResultsRef.current.length > 0) {
+          exportToExcel(currentResultsRef.current, currentViewModeRef.current);
+        } else {
+          setStatusText("Visa först en lista innan du säger Exportera till Excel.");
+        }
       } else {
-        setStatusText("Visa först en lista innan du säger Exportera till Excel.");
+        await exportToPdf();
       }
       return;
     }
@@ -1020,6 +1038,49 @@ export default function TrollslandeApp() {
     const filename = `trollsländor_${selectedSpecies.replaceAll(" ", "_").replaceAll("--", "")}_${fromYear}${month ? `_${month}` : ""}.xlsx`;
     XLSX.writeFileXLSX(workbook, filename);
     setStatusText("Rapport sparad som riktig Excel-fil (.xlsx).");
+  };
+
+  // Export any non-list report (graf/tid/landskap/kommun/karta/fenologi) as a
+  // PDF by rasterising the rendered report area. Triggered by the export button
+  // and by the voice command "Exportera som PDF".
+  const exportToPdf = async () => {
+    const node = reportRef.current;
+    if (!node || currentResultsRef.current.length === 0) {
+      setStatusText("Visa först en rapport innan du exporterar som PDF.");
+      return;
+    }
+    try {
+      setStatusText("Skapar PDF...");
+      // The map shows the current pan/zoom viewport; give freshly requested
+      // tiles a moment to finish loading so the capture matches the screen.
+      if (currentViewModeRef.current === "karta") {
+        await new Promise((resolve) => setTimeout(resolve, 700));
+      }
+      const canvas = await html2canvas(node, { backgroundColor: "#ffffff", scale: 2, useCORS: true });
+      const imgData = canvas.toDataURL("image/png");
+      const orientation = canvas.width >= canvas.height ? "landscape" : "portrait";
+      const pdf = new jsPDF({ orientation, unit: "pt", format: "a4" });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 24;
+      const monthLabel = month ? (monthOptions.find((m) => m.value === month)?.label || "") : "";
+      const period = `${fromYear}${toYear !== fromYear ? `–${toYear}` : ""}${monthLabel ? `, ${monthLabel}` : ""}`;
+      const title = `${labelForViewMode(currentViewModeRef.current)} – ${selectedSpecies} (${period})`;
+      pdf.setFontSize(13);
+      pdf.text(title, margin, margin + 6);
+      const headerOffset = margin + 18;
+      const availW = pageWidth - margin * 2;
+      const availH = pageHeight - headerOffset - margin;
+      const ratio = Math.min(availW / canvas.width, availH / canvas.height);
+      const w = canvas.width * ratio;
+      const h = canvas.height * ratio;
+      pdf.addImage(imgData, "PNG", margin, headerOffset, w, h);
+      const filename = `trollsländor_${currentViewModeRef.current}_${selectedSpecies.replaceAll(" ", "_").replaceAll("--", "")}_${fromYear}${month ? `_${month}` : ""}.pdf`;
+      pdf.save(filename);
+      setStatusText("Rapport sparad som PDF.");
+    } catch (error) {
+      setStatusText(`Kunde inte skapa PDF: ${error?.message || error}`);
+    }
   };
 
   useEffect(() => {
@@ -1274,7 +1335,6 @@ export default function TrollslandeApp() {
     </div>
   );
 
-  const exportStyle = viewMode === "lista" && results.length ? { ...styles.smallButton, ...styles.exportEnabled } : { ...styles.smallButton, ...styles.exportDisabled };
   const columns = isMultiSpeciesSelection
     ? [
         { key: "species", label: "Art", width: "180px" },
@@ -1360,6 +1420,20 @@ export default function TrollslandeApp() {
   const municipalityGraphEnabled = selectedMunicipalities.length === 0;
   const dynamicScrollMaxHeight = Math.max(420, Math.min(820, viewportHeight - 185));
   const dynamicMapHeight = Math.max(460, Math.min(820, viewportHeight - 185));
+
+  const viewModeLabel = labelForViewMode(viewMode);
+  const currentReportHasContent =
+    viewMode === "lista" ? results.length > 0
+      : viewMode === "fenologi" ? phenologyResults.length > 0
+      : (viewMode === "graf" || viewMode === "tid") ? activeChartBlocks.length > 0
+      : (viewMode === "landskap" || viewMode === "kommun") ? horizontalSeries.length > 0
+      : viewMode === "karta" ? mapPoints.length > 0
+      : false;
+  const exportIsExcel = viewMode === "lista";
+  const exportLabel = exportIsExcel ? "Exportera till Excel" : "Exportera som PDF";
+  const exportStyle = currentReportHasContent
+    ? { ...styles.smallButton, ...styles.exportEnabled }
+    : { ...styles.smallButton, ...styles.exportDisabled };
 
   return (
     <div style={styles.page}>
@@ -1478,9 +1552,9 @@ export default function TrollslandeApp() {
                 <button onClick={() => runView("karta", "Karta", buildCurrentConfig())} style={styles.secondaryButton}>Karta</button>
               </div>
               <div style={styles.rowButtonsThird}>
-                <button onClick={() => runView("fenologi", "Fenologi", buildCurrentConfig())} style={styles.secondaryButton}>Fenologi</button>
-                <button onClick={updateLocalDb} disabled={localDbInfo.inProgress || !localDbInfo.exists} style={(localDbInfo.inProgress || !localDbInfo.exists) ? { ...styles.secondaryButton, ...styles.disabledButton } : { ...styles.secondaryButton, background: "#16a34a", borderColor: "#16a34a", color: "white" }}>Uppdatera databas</button>
-                <button onClick={createLocalDb} disabled={localDbInfo.inProgress} style={localDbInfo.inProgress ? { ...styles.secondaryButton, ...styles.disabledButton, background: "#fca5a5", borderColor: "#dc2626" } : { ...styles.secondaryButton, background: "#dc2626", borderColor: "#dc2626" }}>Skapa lokal databas</button>
+                <button onClick={() => runView("fenologi", "Fenologi", buildCurrentConfig())} style={{ ...styles.secondaryButton, gridColumn: 1, gridRow: 1 }}>Fenologi</button>
+                <button onClick={updateLocalDb} disabled={localDbInfo.inProgress || !localDbInfo.exists} style={{ gridColumn: 2, gridRow: 1, ...((localDbInfo.inProgress || !localDbInfo.exists) ? { ...styles.secondaryButton, ...styles.disabledButton } : { ...styles.secondaryButton, background: "#16a34a", borderColor: "#16a34a", color: "white" }) }}>Uppdatera databas</button>
+                <button onClick={createLocalDb} disabled={localDbInfo.inProgress} style={{ gridColumn: 2, gridRow: 2, ...(localDbInfo.inProgress ? { ...styles.secondaryButton, ...styles.disabledButton, background: "#fca5a5", borderColor: "#dc2626" } : { ...styles.secondaryButton, background: "#dc2626", borderColor: "#dc2626" }) }}>Skapa lokal databas</button>
               </div>
             </div>
           </div>
@@ -1489,16 +1563,17 @@ export default function TrollslandeApp() {
             <div style={styles.headerLine}>
               <div>
                 <div style={{ fontSize: 22, fontWeight: 700 }}>
-                  {viewMode === "graf" ? "Tid per år" : viewMode === "tid" ? "Tid" : viewMode === "fenologi" ? "Fenologi" : viewMode === "landskap" ? "Landskap" : viewMode === "kommun" ? "Kommun" : viewMode === "karta" ? "Karta" : "Resultat"}
+                  {viewModeLabel}
                 </div>
                 <div style={{ fontSize: 14, color: "#475569" }}>Antal visade rader: {resultCount}</div>
               </div>
               <div style={styles.helperText}>
                 {voiceEnabled && viewMode === "lista" ? 'Säg "Sortera" + Kolumnrubrik' : voiceEnabled && viewMode === "karta" ? 'Säg "Zooma" + Landskap\n"Zooma" + Kommun\n"Zooma ut"' : ""}
               </div>
-              <button onClick={() => exportToExcel()} disabled={!(viewMode === "lista" && results.length)} style={exportStyle}>Exportera till Excel</button>
+              <button onClick={() => (exportIsExcel ? exportToExcel() : exportToPdf())} disabled={!currentReportHasContent} style={exportStyle}>{exportLabel}</button>
             </div>
 
+            <div ref={reportRef} style={{ background: "#ffffff", borderRadius: 14 }}>
             {viewMode === "lista" ? (
               <div style={styles.tableWrap}>
                 <div style={{ ...styles.scrollArea, maxHeight: dynamicScrollMaxHeight }}>
@@ -1579,9 +1654,9 @@ export default function TrollslandeApp() {
             ) : (
               <div style={styles.mapWrap}>
                 {mapPoints.length === 0 ? <div style={styles.empty}>Ingen karta skapad ännu.</div> : (
-                  <MapContainer center={mapCenter} zoom={6} scrollWheelZoom={true} style={{ height: `${dynamicMapHeight}px`, width: "100%" }}>
+                  <MapContainer center={mapCenter} zoom={6} scrollWheelZoom={true} preferCanvas={true} style={{ height: `${dynamicMapHeight}px`, width: "100%" }}>
                     <MapViewportController targetBounds={mapTargetBounds} viewportToken={mapViewportToken} mapRefExternal={mapRef} />
-                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
+                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" crossOrigin="anonymous" />
                     {mapPoints.map((row) => (
                       <CircleMarker key={row.occurrenceId || `${row.latitude}-${row.longitude}-${row.date}`} center={[row.latitude, row.longitude]} radius={5} pathOptions={{ color: "#b91c1c", fillColor: "#ef4444", fillOpacity: 0.85 }}>
                         <Popup>
@@ -1597,6 +1672,7 @@ export default function TrollslandeApp() {
                 )}
               </div>
             )}
+            </div>
           </div>
         </div>
       </div>
