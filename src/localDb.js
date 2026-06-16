@@ -303,8 +303,11 @@ const handlers = {
     const db = await loadActiveDb();
     if (!db) return [];
 
-    // Pre-filter by species in SQL when available (dominant filter, exact stored
-    // values) to avoid scanning the whole table; fine-grained filtering below.
+    // Pre-filter by species in SQL when available (dominant filter) to avoid
+    // scanning the whole table; fine-grained filtering below. Match
+    // case-insensitively: the SLU API stores vernacular names in lower case
+    // (e.g. "blågrön mosaikslända") while the dropdown values are capitalised
+    // (e.g. "Blågrön mosaikslända"), so an exact IN would match nothing.
     const speciesList = Array.isArray(filters?.speciesList) ? filters.speciesList.filter(Boolean) : [];
     let sql = `
       SELECT occurrenceId, species, date, province, municipality, locality, quantity,
@@ -314,8 +317,8 @@ const handlers = {
     `;
     let bindValues = [];
     if (speciesList.length > 0) {
-      sql += ` WHERE species IN (${speciesList.map(() => "?").join(", ")})`;
-      bindValues = speciesList;
+      sql += ` WHERE LOWER(species) IN (${speciesList.map(() => "?").join(", ")})`;
+      bindValues = speciesList.map((s) => String(s).toLowerCase());
     }
 
     const stmt = db.prepare(sql);
