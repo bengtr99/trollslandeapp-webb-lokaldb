@@ -907,11 +907,33 @@ export default function TrollslandeApp() {
       return;
     }
 
-    const regex = /(art|landskap|kommun|tid\s+från|tid\s+fran|till|månad|manad|rapport)\s+(.+?)(?=\s+(?:art|landskap|kommun|tid\s+från|tid\s+fran|till|månad|manad|rapport)\b|$)/gi;
+    // Maps a spoken value to a report. Used both for "Rapport X" and for a bare
+    // report name (when "Rapport" was misheard or left out).
+    const matchReport = (v) => {
+      if (v.includes("lista")) return { mode: "lista", label: "Lista" };
+      if (v.includes("tid per ar") || v.includes("tid perar")) return { mode: "graf", label: "Tid per år" };
+      if (v.includes("fenologi")) return { mode: "fenologi", label: "Fenologi" };
+      if (v.includes("arter")) return { mode: "arter", label: "Arter" };
+      if (v.includes("kommun")) return { mode: "kommun", label: "Kommun" };
+      if (v.includes("landskap")) return { mode: "landskap", label: "Landskap" };
+      if (v.includes("karta")) return { mode: "karta", label: "Karta" };
+      if (v.includes("tid")) return { mode: "tid", label: "Tid" };
+      return null;
+    };
+
+    // Command keywords, including common mishearings as synonyms. \b avoids
+    // matching e.g. "art" inside "apart".
+    const KW = "art|arten|hart|hat|allt|landskap|kommun|tid\\s+från|tid\\s+fran|till|månad|manad|rapport|rapporter|raport|apart|report";
+    const regex = new RegExp(`\\b(${KW})\\s+(.+?)(?=\\s+(?:${KW})\\b|$)`, "gi");
     let match;
+    let anyKeywordMatched = false;
 
     while ((match = regex.exec(cleanedTranscript)) !== null) {
-      const label = normalizeVoiceText(match[1]);
+      anyKeywordMatched = true;
+      const rawLabel = normalizeVoiceText(match[1]);
+      const label = ["arten", "hart", "hat", "allt"].includes(rawLabel) ? "art"
+        : ["rapporter", "raport", "apart", "report"].includes(rawLabel) ? "rapport"
+        : rawLabel;
       const value = match[2].trim();
 
       if (label === "art") {
@@ -974,16 +996,32 @@ export default function TrollslandeApp() {
       }
 
       if (label === "rapport") {
-        const normalizedValue = normalizeVoiceText(value);
-        if (normalizedValue.includes("lista")) reportCommand = { mode: "lista", label: "Lista" };
-        else if (normalizedValue.includes("tid per ar") || normalizedValue.includes("tid per år") || normalizedValue.includes("tid perar")) reportCommand = { mode: "graf", label: "Tid per år" };
-        else if (normalizedValue.includes("tid") || normalizedValue.includes("tidskrav") || normalizedValue.includes("tidsgraf")) reportCommand = { mode: "tid", label: "Tid" };
-        else if (normalizedValue.includes("fenologi")) reportCommand = { mode: "fenologi", label: "Fenologi" };
-        else if (normalizedValue.includes("kommun")) reportCommand = { mode: "kommun", label: "Kommun" };
-        else if (normalizedValue.includes("landskap")) reportCommand = { mode: "landskap", label: "Landskap" };
-        else if (normalizedValue.includes("karta")) reportCommand = { mode: "karta", label: "Karta" };
-        else if (normalizedValue.includes("arter")) reportCommand = { mode: "arter", label: "Arter" };
-        if (reportCommand) changed.push(`Rapport = ${reportCommand.label}`);
+        const rep = matchReport(normalizeVoiceText(value));
+        if (rep) { reportCommand = rep; changed.push(`Rapport = ${rep.label}`); }
+      }
+    }
+
+    // Fallback when no keyword was recognised: a bare report name (matched
+    // exactly, so "Tid" isn't confused with the species "Tidig mosaikslända"),
+    // otherwise a bare species name.
+    if (!anyKeywordMatched) {
+      const bare = normalizedTranscript;
+      const bareReport =
+        (bare === "lista" || bare === "listan") ? { mode: "lista", label: "Lista" }
+        : (bare === "tid per ar" || bare === "tid perar") ? { mode: "graf", label: "Tid per år" }
+        : (bare === "tid" || bare === "tiden") ? { mode: "tid", label: "Tid" }
+        : (bare === "fenologi" || bare === "fenologin") ? { mode: "fenologi", label: "Fenologi" }
+        : (bare === "kommun" || bare === "kommunen") ? { mode: "kommun", label: "Kommun" }
+        : (bare === "landskap" || bare === "landskapet") ? { mode: "landskap", label: "Landskap" }
+        : (bare === "karta" || bare === "kartan") ? { mode: "karta", label: "Karta" }
+        : (bare === "arter" || bare === "arterna") ? { mode: "arter", label: "Arter" }
+        : null;
+      if (bareReport) {
+        reportCommand = bareReport;
+        changed.push(`Rapport = ${bareReport.label}`);
+      } else {
+        const bareSpecies = findBestVoiceOption(cleanedTranscript, speciesOptions);
+        if (bareSpecies) { speciesValue = bareSpecies; changed.push(`Art = ${bareSpecies}`); }
       }
     }
 
