@@ -4,7 +4,6 @@ import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { invoke } from "./localDb";
 
 // Online Swedish voice control via the browser Web Speech API (works in
 // Chrome/Edge). This is the same engine the original app used.
@@ -154,17 +153,17 @@ export default function TrollslandeApp() {
 
   const styles = {
     page: { minHeight: "100vh", background: "#eef2f7", padding: 12, fontFamily: "Arial, Helvetica, sans-serif", color: "#1f2937" },
-    shell: { maxWidth: 1700, margin: "0 auto", background: "#f8fafc", borderRadius: 20, padding: 16, boxShadow: "0 10px 30px rgba(0,0,0,0.08)" },
+    shell: { maxWidth: 820, margin: "0 auto", background: "#f8fafc", borderRadius: 16, padding: 10, boxShadow: "0 10px 30px rgba(0,0,0,0.08)" },
     topBar: { display: "flex", justifyContent: "space-between", gap: 16, alignItems: "center", marginBottom: 16 },
-    status: { background: "white", borderRadius: 14, padding: "10px 14px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", fontSize: 14, minWidth: 320 },
-    loadingBanner: { background: "#f59e0b", color: "#1f2937", fontWeight: 700, textAlign: "center", padding: "12px 16px", borderRadius: 12, marginBottom: 16, fontSize: 16, boxShadow: "0 2px 8px rgba(0,0,0,0.12)" },
-    columns: { display: "grid", gridTemplateColumns: "320px 1fr", gap: 16, alignItems: "start" },
+    status: { background: "white", borderRadius: 14, padding: "8px 12px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", fontSize: 13, flex: 1, minWidth: 0 },
+    loadingBanner: { background: "#f59e0b", color: "#1f2937", fontWeight: 700, textAlign: "center", padding: "12px 14px", borderRadius: 12, marginBottom: 10, fontSize: 16, boxShadow: "0 2px 8px rgba(0,0,0,0.12)" },
+    columns: { display: "block" },
     leftCard: { background: "#dbeafe", borderRadius: 20, padding: 12, boxShadow: "0 2px 10px rgba(0,0,0,0.06)" },
     rightCard: { background: "#dcfce7", borderRadius: 20, padding: 16, boxShadow: "0 2px 10px rgba(0,0,0,0.06)", minWidth: 0 },
     section: { marginBottom: 10, textAlign: "left" },
     label: { display: "block", marginBottom: 4, fontSize: 13, fontWeight: 700 },
-    select: { width: "100%", padding: "7px 10px", borderRadius: 12, border: "1px solid #93c5fd", background: "white", fontSize: 14, boxSizing: "border-box" },
-    input: { width: "100%", padding: "7px 10px", borderRadius: 12, border: "1px solid #93c5fd", background: "white", fontSize: 14, boxSizing: "border-box" },
+    select: { width: "100%", padding: "11px 12px", borderRadius: 12, border: "1px solid #93c5fd", background: "white", fontSize: 16, boxSizing: "border-box" },
+    input: { width: "100%", padding: "11px 12px", borderRadius: 12, border: "1px solid #93c5fd", background: "white", fontSize: 16, boxSizing: "border-box" },
     checkboxRow: { display: "flex", alignItems: "center", gap: 8, marginTop: 6, fontSize: 13 },
     smallButton: { padding: "10px 12px", borderRadius: 12, border: "1px solid #cbd5e1", background: "white", cursor: "pointer", fontSize: 14 },
     disabledButton: { background: "#e5e7eb", color: "#9ca3af", borderColor: "#d1d5db", cursor: "not-allowed" },
@@ -174,9 +173,15 @@ export default function TrollslandeApp() {
     rowButtonsBottom: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginTop: 8 },
     rowButtonsThird: { display: "grid", gridTemplateColumns: "1fr 2fr", gap: 6, marginTop: 8 },
     phenologyMarkerCell: { padding: "10px 8px", fontSize: 14, fontWeight: 700, background: "#f0fdf4", borderBottom: "1px solid #dcfce7" },
-    primaryButton: { width: "100%", padding: "6px 12px", borderRadius: 12, borderWidth: 1, borderStyle: "solid", borderColor: "#0f172a", background: "#0f172a", color: "white", fontSize: 14, fontWeight: 700, cursor: "pointer" },
-    secondaryButton: { width: "100%", padding: "6px 12px", borderRadius: 12, borderWidth: 1, borderStyle: "solid", borderColor: "#0f172a", background: "#0f172a", color: "white", fontSize: 14, fontWeight: 700, cursor: "pointer" },
+    primaryButton: { width: "100%", padding: "12px 10px", borderRadius: 12, borderWidth: 1, borderStyle: "solid", borderColor: "#0f172a", background: "#0f172a", color: "white", fontSize: 15, fontWeight: 700, cursor: "pointer" },
+    secondaryButton: { width: "100%", padding: "12px 10px", borderRadius: 12, borderWidth: 1, borderStyle: "solid", borderColor: "#0f172a", background: "#0f172a", color: "white", fontSize: 15, fontWeight: 700, cursor: "pointer" },
     headerLine: { display: "grid", gridTemplateColumns: "1fr auto auto", alignItems: "start", gap: 16, paddingBottom: 12, borderBottom: "1px solid #bbf7d0", marginBottom: 12 },
+    reportHeader: { display: "flex", alignItems: "center", gap: 10, paddingBottom: 10, borderBottom: "1px solid #bbf7d0", marginBottom: 10 },
+    backButton: { padding: "12px 16px", borderRadius: 10, border: "none", background: "#0f172a", color: "white", fontWeight: 700, fontSize: 15, cursor: "pointer", whiteSpace: "nowrap" },
+    reportTitleWrap: { flex: 1, minWidth: 0 },
+    rotateHint: { textAlign: "center", fontSize: 13, color: "#475569", background: "#fff", borderRadius: 10, padding: "6px 10px", marginBottom: 8 },
+    micBar: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, background: "#eff6ff", border: "1px solid #93c5fd", borderRadius: 12, padding: "10px 12px", marginBottom: 10, fontSize: 13, color: "#1e3a8a", cursor: "pointer" },
+    micHeard: { color: "#475569", fontStyle: "italic", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, textAlign: "right" },
     helperText: { fontSize: 14, color: "#1f2937", textAlign: "center", whiteSpace: "pre-line", lineHeight: 1.25, paddingTop: 4 },
     exportDisabled: { background: "#e5e7eb", color: "#9ca3af", border: "1px solid #d1d5db", cursor: "not-allowed" },
     exportEnabled: { background: "#059669", color: "white", border: "1px solid #059669", cursor: "pointer" },
@@ -218,7 +223,7 @@ export default function TrollslandeApp() {
   const [statusText, setStatusText] = useState("Välj art och filter. Klicka sedan på en rapportknapp.");
   const [sortField, setSortField] = useState("date");
   const [sortDirection, setSortDirection] = useState("asc");
-  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const voiceEnabled = !!SpeechRecognitionApi; // mobile: microphone mode is always on when the browser supports it
   const [voiceListening, setVoiceListening] = useState(false);
   const [lastHeard, setLastHeard] = useState("-");
   const recognitionRef = useRef(null);
@@ -236,8 +241,8 @@ export default function TrollslandeApp() {
   const [mapViewportToken, setMapViewportToken] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(() => (typeof window !== "undefined" ? window.innerHeight : 1080));
 
-  const [useLocalDb, setUseLocalDb] = useState(false);
-  const [localDbInfo, setLocalDbInfo] = useState({ exists: false, createdAt: null, rowCount: 0, fileSize: 0, inProgress: false, progressPct: 0, progressText: "" });
+  const [screen, setScreen] = useState("select"); // "select" (portrait filter screen) | "report"
+  const [isPortrait, setIsPortrait] = useState(() => (typeof window !== "undefined" ? window.innerHeight >= window.innerWidth : true));
 
   const normalizeVoiceText = (value) => String(value || "")
     .toLowerCase()
@@ -465,53 +470,8 @@ export default function TrollslandeApp() {
     return filterRowsBySelectedMonth(deduped.map(mapFeatureToRow), config).filter((row) => !shouldExcludeRow(row, config));
   };
 
-  const normalizeLocalCompare = (value) => String(value || "").normalize("NFC").replace(/\s+/g, " ").trim().toLowerCase();
-
-  const fetchRowsLocal = async (config = {}) => {
-    const rows = await invoke("query_local_rows", {
-      filters: {
-        speciesList: config.speciesList ?? getSelectedSpeciesListFor(config.selectedSpecies ?? selectedSpecies),
-        selectedLandscapes: config.selectedLandscapes ?? selectedLandscapes,
-        selectedMunicipalities: config.selectedMunicipalities ?? selectedMunicipalities,
-        fromYear: config.fromYear ?? fromYear,
-        toYear: config.toYear ?? toYear,
-        month: config.month ?? month,
-        observerFilter: config.observerFilter ?? observerFilter
-      }
-    });
-    const arr = Array.isArray(rows) ? rows : [];
-    const speciesSet = new Set((config.speciesList ?? getSelectedSpeciesListFor(config.selectedSpecies ?? selectedSpecies)).map(normalizeLocalCompare));
-    const landscapeSet = new Set((config.selectedLandscapes ?? selectedLandscapes).map(normalizeLocalCompare));
-    const municipalitySet = new Set((config.selectedMunicipalities ?? selectedMunicipalities).map(normalizeLocalCompare));
-    const configFromYear = String(config.fromYear ?? fromYear);
-    const configToYear = String(config.toYear ?? toYear);
-    const configMonth = String((config.month ?? month) || "");
-    const configObserverFilter = normalizeLocalCompare(config.observerFilter ?? observerFilter);
-
-    return arr.filter((row) => {
-      const speciesOk = speciesSet.size === 0 || speciesSet.has(normalizeLocalCompare(row.species));
-      if (!speciesOk) return false;
-      const landscapeOk = landscapeSet.size === 0 || landscapeSet.has(normalizeLocalCompare(row.province));
-      if (!landscapeOk) return false;
-      const municipalityOk = municipalitySet.size === 0 || municipalitySet.has(normalizeLocalCompare(row.municipality));
-      if (!municipalityOk) return false;
-      const date = String(row.date || "").trim();
-      const year = date.slice(0, 4);
-      if (configFromYear && year && year < configFromYear) return false;
-      if (configToYear && year && year > configToYear) return false;
-      if (configMonth && date.slice(5, 7) !== configMonth) return false;
-      if (configObserverFilter && !normalizeLocalCompare(row.recordedBy).includes(configObserverFilter)) return false;
-      return !shouldExcludeRow(row, config);
-    });
-  };
-
-  const getDataRows = async (config = {}) => {
-    if (useLocalDb) {
-      if (!localDbInfo.exists) throw new Error("Ingen lokal databas finns ännu. Skapa den först.");
-      return await fetchRowsLocal(config);
-    }
-    return await fetchRowsOnline(config);
-  };
+  // Mobile is online-only: always fetch live from the SLU API.
+  const getDataRows = async (config = {}) => fetchRowsOnline(config);
 
   const runView = async (mode, label, config = null) => {
     const activeConfig = config || {};
@@ -529,7 +489,8 @@ export default function TrollslandeApp() {
       const finalRows = mode === "lista" ? defaultSortRows(rows, selectedSpeciesValue) : rows;
       setResults(finalRows);
       setResultCount(finalRows.length);
-      setStatusText(`Klar. ${label} skapad från ${finalRows.length} observationer för ${selectedSpeciesValue}${useLocalDb ? ' (lokal databas)' : ''}.`);
+      setStatusText(`Klar. ${label} skapad från ${finalRows.length} observationer för ${selectedSpeciesValue}.`);
+      showReport();
     } catch (error) {
       setStatusText(`Kunde inte hämta data: ${error.message}`);
       setResults([]);
@@ -539,224 +500,29 @@ export default function TrollslandeApp() {
     }
   };
 
-  const refreshLocalDbInfo = async () => {
-    try {
-      const info = await invoke("get_local_db_status");
-      setLocalDbInfo(info);
-    } catch {
-      // ignore
+  // Screen navigation: the selection screen and the report screen. Entering a
+  // report pushes a history entry so the phone's Back button returns to the
+  // selection screen.
+  const historyPushedRef = useRef(false);
+  const showReport = () => {
+    if (!historyPushedRef.current) {
+      try { window.history.pushState({ screen: "report" }, ""); } catch { /* ignore */ }
+      historyPushedRef.current = true;
     }
+    setScreen("report");
   };
-
-  // Track the most recent `modified` timestamp across fetched features, used as
-  // the baseline for later incremental updates.
-  const maxModifiedOf = (features, current) => {
-    let max = current || "";
-    for (const f of (features || [])) {
-      const m = f?.properties?.modified;
-      if (m && (!max || Date.parse(m) > Date.parse(max))) max = m;
-    }
-    return max;
+  const goToSelect = () => {
+    historyPushedRef.current = false;
+    setScreen("select");
   };
-
-  const createLocalDb = async () => {
-    const confirmed = window.confirm(
-      "Detta RENSAR den befintliga lokala databasen och laddar om ALLA observationer från SLU.\n\n" +
-      "Det kan ta lång tid (flera minuter) beroende på antal arter och din uppkoppling.\n\n" +
-      "Vill du fortsätta?"
-    );
-    if (!confirmed) return;
-
-    const currentYear = new Date().getFullYear();
-    const FIRST_YEAR = 1990;
-    const PAGE = 5000;       // server hard cap of features per request
-    const CONCURRENCY = 5;   // global max simultaneous requests (gentle on the API)
-    const total = allSpecies.length;
-    let done = 0;
-    let maxModified = "";
-
-    const updateProgress = async (pct, text) => {
-      setLocalDbInfo((prev) => ({ ...prev, inProgress: true, progressPct: pct, progressText: text }));
-      try { await invoke("update_local_db_progress", { pct, text }); } catch { /* ignore */ }
-    };
-
-    // Global concurrency limiter so the adaptive recursion below never exceeds
-    // CONCURRENCY in-flight requests, regardless of how it fans out.
-    let active = 0;
-    const waiters = [];
-    const acquire = () => new Promise((res) => {
-      if (active < CONCURRENCY) { active += 1; res(); } else waiters.push(res);
-    });
-    const release = () => {
-      active -= 1;
-      if (waiters.length) { active += 1; (waiters.shift())(); }
-    };
-    const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
-
-    // One page of results, with retry/backoff for transient errors / rate limits.
-    const fetchPage = async (cqlFilter, startIndex = 0) => {
-      const params = new URLSearchParams({
-        service: "WFS",
-        version: "2.0.0",
-        request: "GetFeature",
-        typeNames: "SOS:SpeciesObservations",
-        outputFormat: "application/json",
-        count: String(PAGE),
-        startIndex: String(startIndex),
-        CQL_Filter: cqlFilter
-      });
-      const url = `https://sosgeo.artdata.slu.se/geoserver/SOS/ows?${params.toString()}`;
-      let lastErr = null;
-      for (let attempt = 0; attempt < 4; attempt += 1) {
-        await acquire();
-        try {
-          const response = await fetch(url);
-          if (response.status === 429 || response.status === 503) throw new Error(`Tillfälligt stopp (${response.status})`);
-          if (!response.ok) throw new Error(`WFS-fel ${response.status}`);
-          const data = await response.json();
-          return Array.isArray(data?.features) ? data.features : [];
-        } catch (err) {
-          lastErr = err;
-        } finally {
-          release();
-        }
-        await sleep(1000 * (attempt + 1)); // back off before retrying
-      }
-      throw lastErr || new Error("Okänt nätverksfel");
-    };
-
-    const speciesCql = (species, startY, endY) =>
-      `datasetName='Artportalen' AND vernacularName='${escapeCql(species)}' AND endDate >= '${startY}-01-01' AND endDate <= '${endY}-12-31'`;
-
-    // Page through a single year that by itself exceeds the 5000 cap (rare).
-    const fetchFullYear = async (species, year) => {
-      const all = [];
-      let start = 0;
-      for (;;) {
-        const page = await fetchPage(speciesCql(species, year, year), start);
-        all.push(...page);
-        if (page.length < PAGE) break;
-        start += PAGE;
-      }
-      return all;
-    };
-
-    // Adaptive: fetch the whole year range in one request; only split (and recurse)
-    // when a request hits the 5000 cap, i.e. for the few very common species.
-    const fetchSpeciesRange = async (species, startY, endY) => {
-      const feats = await fetchPage(speciesCql(species, startY, endY), 0);
-      if (feats.length < PAGE) return feats;
-      if (startY >= endY) return fetchFullYear(species, startY);
-      const mid = Math.floor((startY + endY) / 2);
-      const [a, b] = await Promise.all([
-        fetchSpeciesRange(species, startY, mid),
-        fetchSpeciesRange(species, mid + 1, endY)
-      ]);
-      return a.concat(b);
-    };
-
-    try {
-      await invoke("prepare_local_db");
-      await updateProgress(1, "Förbereder lokal databas...");
-      setStatusText("Skapar lokal databas...");
-
-      await Promise.all(allSpecies.map(async (species) => {
-        try {
-          const features = await fetchSpeciesRange(species, FIRST_YEAR, currentYear);
-          maxModified = maxModifiedOf(features, maxModified);
-          const rows = features.map(mapFeatureToRow);
-          for (let i = 0; i < rows.length; i += 1000) {
-            const chunk = rows.slice(i, i + 1000);
-            if (chunk.length) await invoke("insert_local_rows_batch", { rows: chunk });
-          }
-        } finally {
-          done += 1;
-          const pct = Math.max(1, Math.min(99, (done / total) * 100));
-          await updateProgress(pct, `Hämtar arter: ${done} av ${total} klara`);
-        }
-      }));
-
-      await updateProgress(99, "Slutför lokal databas...");
-      const info = await invoke("finalize_local_db", { lastModifiedSync: maxModified });
-      setLocalDbInfo(info);
-      setStatusText(`Lokal databas klar. ${info.rowCount || 0} poster tillgängliga.`);
-    } catch (error) {
-      setLocalDbInfo((prev) => ({ ...prev, inProgress: false, progressText: `Fel: ${String(error)}` }));
-      setStatusText(`Kunde inte skapa lokal databas: ${String(error)}`);
-    }
+  const goBack = () => {
+    if (historyPushedRef.current) { window.history.back(); } else { goToSelect(); }
   };
-
-  // Incremental update: fetch only observations changed since the last sync
-  // (by `modified`), which captures both new and after-the-fact edited records.
-  const updateLocalDb = async () => {
-    try {
-      const sync = await invoke("get_sync_info");
-      if (!sync?.exists) {
-        setStatusText("Ingen lokal databas finns. Klicka på Skapa lokal databas först.");
-        return;
-      }
-      if (!sync.lastModifiedSync) {
-        setStatusText("Databasen saknar synk-tidpunkt. Gör en full ombyggnad med Skapa lokal databas en gång.");
-        return;
-      }
-      const since = sync.lastModifiedSync;
-      const updateProgress = async (pct, text) => {
-        setLocalDbInfo((prev) => ({ ...prev, inProgress: true, progressPct: pct, progressText: text }));
-        try { await invoke("update_local_db_progress", { pct, text }); } catch { /* ignore */ }
-      };
-      const fetchUpdatedBatch = async (speciesName) => {
-        const params = new URLSearchParams({
-          service: "WFS",
-          version: "1.0.0",
-          request: "GetFeature",
-          typeName: "SOS:SpeciesObservations",
-          outputFormat: "application/json",
-          maxFeatures: "5000",
-          CQL_Filter: [
-            "datasetName='Artportalen'",
-            `vernacularName='${escapeCql(speciesName)}'`,
-            `modified >= '${since}'`
-          ].join(" AND ")
-        });
-        const response = await fetch(`https://sosgeo.artdata.slu.se/geoserver/SOS/ows?${params.toString()}`);
-        if (!response.ok) throw new Error(`WFS-fel ${response.status}`);
-        const data = await response.json();
-        return Array.isArray(data?.features) ? data.features : [];
-      };
-
-      let maxModified = since;
-      let changedCount = 0;
-      try {
-        await invoke("begin_local_update");
-        await updateProgress(1, "Söker nya och ändrade observationer...");
-        setStatusText("Uppdaterar lokal databas...");
-        for (let si = 0; si < allSpecies.length; si += 1) {
-          const speciesName = allSpecies[si];
-          const features = await fetchUpdatedBatch(speciesName);
-          maxModified = maxModifiedOf(features, maxModified);
-          const rows = features.map(mapFeatureToRow);
-          for (let i = 0; i < rows.length; i += 1000) {
-            const chunk = rows.slice(i, i + 1000);
-            if (chunk.length) {
-              await invoke("upsert_local_rows_batch", { rows: chunk });
-              changedCount += chunk.length;
-            }
-          }
-          const pct = Math.max(1, Math.min(99, ((si + 1) / allSpecies.length) * 100));
-          await updateProgress(pct, `Kontrollerar art ${si + 1} av ${allSpecies.length}: ${speciesName}`);
-        }
-        await updateProgress(99, "Slutför uppdatering...");
-        const info = await invoke("commit_local_update", { lastModifiedSync: maxModified });
-        setLocalDbInfo(info);
-        setStatusText(`Databasen uppdaterad. ${changedCount} nya/ändrade poster hämtade. Totalt ${info.rowCount || 0} poster.`);
-      } catch (error) {
-        try { await invoke("rollback_local_update"); } catch { /* ignore */ }
-        throw error;
-      }
-    } catch (error) {
-      setLocalDbInfo((prev) => ({ ...prev, inProgress: false, progressText: `Fel: ${String(error)}` }));
-      setStatusText(`Kunde inte uppdatera databasen: ${String(error)}`);
-    }
+  // Browsers block "always-on" speech until a user gesture; tapping the mic bar
+  // (re)starts the recogniser and triggers the microphone permission prompt.
+  const startMic = () => {
+    shouldRestartRef.current = true;
+    try { recognitionRef.current?.start(); } catch (_) { /* already listening */ }
   };
 
   const findBestVoiceOption = (spokenValue, options) => {
@@ -807,6 +573,13 @@ export default function TrollslandeApp() {
     let exportRequested = false;
 
     const normalizedTranscript = normalizeVoiceText(cleanedTranscript);
+
+    // "Bakåt" / "Tillbaka" → same as the Back button (return to the selection screen).
+    if (normalizedTranscript.includes("bakat") || normalizedTranscript.includes("tillbaka")) {
+      goBack();
+      setStatusText("Tillbaka till väljaren.");
+      return;
+    }
 
     if (normalizedTranscript.includes("exportera")) {
       exportRequested = true;
@@ -1098,23 +871,25 @@ export default function TrollslandeApp() {
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
-    const onResize = () => setViewportHeight(window.innerHeight);
+    const onResize = () => {
+      setViewportHeight(window.innerHeight);
+      setIsPortrait(window.innerHeight >= window.innerWidth);
+    };
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+    };
   }, []);
 
+  // The phone Back button (and the in-app Back button) returns to the selection screen.
   useEffect(() => {
-    refreshLocalDbInfo();
-    const timer = window.setInterval(() => { refreshLocalDbInfo(); }, 500);
-    return () => window.clearInterval(timer);
+    if (typeof window === "undefined") return undefined;
+    const onPop = () => { historyPushedRef.current = false; setScreen("select"); };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
   }, []);
-
-  useEffect(() => {
-    if (localDbInfo.inProgress) return;
-    if (localDbInfo.exists && localDbInfo.progressText === "Lokal databas klar") {
-      setStatusText(`Lokal databas klar. ${localDbInfo.rowCount || 0} poster tillgängliga.`);
-    }
-  }, [localDbInfo.inProgress, localDbInfo.exists, localDbInfo.progressText, localDbInfo.rowCount]);
 
   useEffect(() => {
     filtersRef.current = {
@@ -1159,31 +934,50 @@ export default function TrollslandeApp() {
 
     const recognition = new SpeechRecognitionApi();
     recognition.lang = "sv-SE";
-    recognition.continuous = false;
+    recognition.continuous = true;
     recognition.interimResults = false;
 
-    recognition.onstart = () => setVoiceListening(true);
+    let startedAt = 0;
+    recognition.onstart = () => { startedAt = Date.now(); setVoiceListening(true); };
     recognition.onend = () => {
       setVoiceListening(false);
-      if (shouldRestartRef.current) {
-        window.setTimeout(() => {
-          try { recognition.start(); } catch (_) { /* ignore repeated start */ }
-        }, 150);
+      const ranMs = Date.now() - startedAt;
+      // Only auto-restart if the session actually ran a while. If it ends almost
+      // immediately, stop (otherwise the recogniser flickers in a tight loop) and
+      // let the user tap the mic bar to try again.
+      if (shouldRestartRef.current && ranMs > 1500) {
+        window.setTimeout(() => { try { recognition.start(); } catch (_) { /* ignore */ } }, 400);
+      } else if (shouldRestartRef.current) {
+        shouldRestartRef.current = false;
+        setStatusText('Mikrofonen stoppade. Tryck på mikrofon-raden och säg t.ex. "Rapport Tid".');
       }
     };
     recognition.onerror = (event) => {
       setVoiceListening(false);
-      if (event?.error === "network") {
-        setStatusText("Röstfel: ingen internetuppkoppling för taligenkänningen (online krävs).");
-      } else if (event?.error === "not-allowed" || event?.error === "service-not-allowed") {
-        setStatusText("Mikrofonåtkomst nekad. Tillåt mikrofonen i webbläsaren.");
+      shouldRestartRef.current = false; // never tight-loop on errors
+      const err = event?.error || "okänt";
+      if (err === "no-speech" || err === "aborted") {
+        setStatusText('Hörde inget ljud. Tryck på mikrofon-raden och säg t.ex. "Rapport Tid".');
+      } else if (err === "network") {
+        setStatusText("Röstfel: taligenkänningen når inte internet (kräver uppkoppling och Chrome).");
+      } else if (err === "not-allowed" || err === "service-not-allowed") {
+        setStatusText("Mikrofonåtkomst nekad. Tillåt mikrofonen i webbläsaren och ladda om sidan.");
+      } else if (err === "audio-capture") {
+        setStatusText("Ingen mikrofon hittades. Kontrollera att en mikrofon är inkopplad och vald.");
+      } else {
+        setStatusText(`Röstfel: ${err}. Tryck på mikrofon-raden för att försöka igen.`);
       }
     };
     recognition.onresult = async (event) => {
-      const transcript = Array.from(event.results)
-        .map((result) => result[0]?.transcript || "")
-        .join(" ")
-        .trim();
+      // Continuous recognition keeps every past result in event.results, so only
+      // handle the newly finalised result(s) — otherwise each new command gets
+      // concatenated onto the whole history and stops matching.
+      let transcript = "";
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        const r = event.results[i];
+        if (r.isFinal) transcript += `${r[0]?.transcript || ""} `;
+      }
+      transcript = transcript.trim();
       if (!transcript) return;
       setLastHeard(transcript);
       const fn = applyVoiceCommandRef.current;
@@ -1460,54 +1254,27 @@ export default function TrollslandeApp() {
       <div style={styles.shell}>
         <div style={styles.topBar}>
           <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
-            <h1 style={{ margin: 0, fontSize: 28, whiteSpace: "nowrap" }}>Trollsländor - Sök i ArtPortalen</h1>
-            {localDbInfo.exists ? <div style={{ fontSize: 13, color: "#065f46", whiteSpace: "nowrap" }}>Lokal databas skapad {localDbInfo.createdAt || ""}</div> : null}
+            <h1 style={{ margin: 0, fontSize: 22 }}>Trollsländor</h1>
           </div>
           <div style={styles.status}>
             <div>{loading ? "Arbetar..." : statusText}</div>
-            {localDbInfo.inProgress ? (
-              <div style={{ marginTop: 8 }}>
-                <div style={{ fontSize: 12, marginBottom: 4 }}>{localDbInfo.progressText || "Skapar lokal databas..."}</div>
-                <div style={{ height: 10, background: "#d1d5db", borderRadius: 999, overflow: "hidden" }}>
-                  <div style={{ width: `${localDbInfo.progressPct || 0}%`, height: "100%", background: "#2563eb" }} />
-                </div>
-              </div>
-            ) : null}
           </div>
         </div>
 
         {loading ? <div className="tl-loading" style={styles.loadingBanner}>⏳ Arbetar – hämtar observationer, vänta…</div> : null}
 
+        {SpeechRecognitionApi ? (
+          <div style={styles.micBar} onClick={startMic}>
+            <span style={{ fontWeight: 700, whiteSpace: "nowrap" }}>{voiceListening ? "🎤 Lyssnar…" : "🎤 Tryck för att aktivera"}</span>
+            <span style={styles.micHeard}>{lastHeard && lastHeard !== "-" ? `Hörde: "${lastHeard}"` : 'Säg t.ex. "Rapport Tid"'}</span>
+          </div>
+        ) : (
+          <div style={styles.micBar}>Röststyrning stöds inte i denna webbläsare (prova Chrome).</div>
+        )}
+
         <div style={styles.columns}>
+          {screen === "select" ? (
           <div style={styles.leftCard}>
-            <div style={styles.voiceBox}>
-              <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
-                  <input
-                    type="checkbox"
-                    checked={voiceEnabled}
-                    onChange={(e) => setVoiceEnabled(e.target.checked)}
-                    disabled={!SpeechRecognitionApi}
-                  />
-                  <span>Mikrofonläge</span>
-                </label>
-                <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
-                  <input
-                    type="checkbox"
-                    checked={useLocalDb}
-                    onChange={(e) => setUseLocalDb(e.target.checked)}
-                    disabled={!localDbInfo.exists && !useLocalDb}
-                  />
-                  <span>Lokal databas</span>
-                </label>
-              </div>
-              {!SpeechRecognitionApi ? (
-                <div style={styles.voiceText}>Röststyrning stöds inte i denna webbläsare (använd Chrome eller Edge).</div>
-              ) : null}
-              <div style={{ ...styles.voiceText, marginTop: 4 }}>
-                {voiceEnabled && voiceListening ? "🎤 Lyssnar – " : ""}Senast hört: {lastHeard || "-"}
-              </div>
-            </div>
 
             <div style={styles.section}>
               <div style={{ display: "grid", gridTemplateColumns: "64px 1fr", gap: 8, alignItems: "center" }}>
@@ -1573,28 +1340,23 @@ export default function TrollslandeApp() {
                 <button onClick={() => runView("kommun", "Kommun", buildCurrentConfig())} disabled={!municipalityGraphEnabled} style={!municipalityGraphEnabled ? { ...styles.secondaryButton, ...styles.disabledButton } : styles.secondaryButton}>Kommun</button>
                 <button onClick={() => runView("karta", "Karta", buildCurrentConfig())} style={styles.secondaryButton}>Karta</button>
               </div>
-              <div style={styles.rowButtonsThird}>
-                <button onClick={() => runView("fenologi", "Fenologi", buildCurrentConfig())} style={{ ...styles.secondaryButton, gridColumn: 1, gridRow: 1 }}>Fenologi</button>
-                <button onClick={() => runView("arter", "Arter", buildCurrentConfig())} disabled={!isMultiSpeciesSelection} style={isMultiSpeciesSelection ? { ...styles.secondaryButton, gridColumn: 1, gridRow: 2 } : { ...styles.secondaryButton, ...styles.disabledButton, gridColumn: 1, gridRow: 2 }}>Arter</button>
-                <button onClick={updateLocalDb} disabled={localDbInfo.inProgress || !localDbInfo.exists} style={{ gridColumn: 2, gridRow: 1, ...((localDbInfo.inProgress || !localDbInfo.exists) ? { ...styles.secondaryButton, ...styles.disabledButton } : { ...styles.secondaryButton, background: "#16a34a", borderColor: "#16a34a", color: "white" }) }}>Uppdatera databas</button>
-                <button onClick={createLocalDb} disabled={localDbInfo.inProgress} style={{ gridColumn: 2, gridRow: 2, ...(localDbInfo.inProgress ? { ...styles.secondaryButton, ...styles.disabledButton, background: "#fca5a5", borderColor: "#dc2626" } : { ...styles.secondaryButton, background: "#dc2626", borderColor: "#dc2626" }) }}>Skapa lokal databas</button>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 8 }}>
+                <button onClick={() => runView("fenologi", "Fenologi", buildCurrentConfig())} style={styles.secondaryButton}>Fenologi</button>
+                <button onClick={() => runView("arter", "Arter", buildCurrentConfig())} disabled={!isMultiSpeciesSelection} style={!isMultiSpeciesSelection ? { ...styles.secondaryButton, ...styles.disabledButton } : styles.secondaryButton}>Arter</button>
               </div>
             </div>
           </div>
-
+          ) : (
           <div style={styles.rightCard}>
-            <div style={styles.headerLine}>
-              <div>
-                <div style={{ fontSize: 22, fontWeight: 700 }}>
-                  {viewModeLabel}
-                </div>
-                <div style={{ fontSize: 14, color: "#475569" }}>Antal visade rader: {resultCount}</div>
-              </div>
-              <div style={styles.helperText}>
-                {voiceEnabled && viewMode === "lista" ? 'Säg "Sortera" + Kolumnrubrik' : voiceEnabled && viewMode === "karta" ? 'Säg "Zooma" + Landskap\n"Zooma" + Kommun\n"Zooma ut"' : ""}
+            <div style={styles.reportHeader}>
+              <button onClick={goBack} style={styles.backButton}>← Bakåt</button>
+              <div style={styles.reportTitleWrap}>
+                <div style={{ fontSize: 18, fontWeight: 700 }}>{viewModeLabel}</div>
+                <div style={{ fontSize: 12, color: "#475569" }}>{resultCount} rader</div>
               </div>
               <button onClick={() => (exportIsExcel ? exportToExcel() : exportToPdf())} disabled={!currentReportHasContent} style={exportStyle}>{exportLabel}</button>
             </div>
+            {isPortrait ? <div style={styles.rotateHint}>🔄 Vrid telefonen i sidled för bästa vy</div> : null}
 
             <div ref={reportRef} style={{ background: "#ffffff", borderRadius: 14 }}>
             {viewMode === "lista" ? (
@@ -1697,6 +1459,7 @@ export default function TrollslandeApp() {
             )}
             </div>
           </div>
+          )}
         </div>
       </div>
     </div>
