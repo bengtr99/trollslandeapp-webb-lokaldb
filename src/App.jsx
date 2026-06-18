@@ -161,6 +161,7 @@ export default function TrollslandeApp() {
     columns: { display: "grid", gridTemplateColumns: "320px 1fr", gap: 16, alignItems: "start" },
     leftCard: { background: "#dbeafe", borderRadius: 20, padding: 12, boxShadow: "0 2px 10px rgba(0,0,0,0.06)" },
     rightCard: { background: "#dcfce7", borderRadius: 20, padding: 16, boxShadow: "0 2px 10px rgba(0,0,0,0.06)", minWidth: 0 },
+    dataCredit: { marginTop: 12, paddingTop: 8, fontSize: 12, color: "#64748b", textAlign: "center" },
     section: { marginBottom: 10, textAlign: "left" },
     label: { display: "block", marginBottom: 4, fontSize: 13, fontWeight: 700 },
     select: { width: "100%", padding: "7px 10px", borderRadius: 12, border: "1px solid #93c5fd", background: "white", fontSize: 14, boxSizing: "border-box" },
@@ -1734,6 +1735,7 @@ export default function TrollslandeApp() {
               </div>
             )}
             </div>
+            <div style={styles.dataCredit}>Data hämtas ur Artportalens databas från SLU Artdatabanken</div>
           </div>
         </div>
       </div>
