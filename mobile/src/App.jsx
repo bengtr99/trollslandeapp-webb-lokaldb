@@ -160,7 +160,7 @@ export default function TrollslandeApp() {
     columns: { display: "block" },
     leftCard: { background: "#dbeafe", borderRadius: 14, padding: 8, boxShadow: "0 2px 10px rgba(0,0,0,0.06)" },
     rightCard: { background: "#dcfce7", borderRadius: 20, padding: 16, boxShadow: "0 2px 10px rgba(0,0,0,0.06)", minWidth: 0 },
-    dataCredit: { marginTop: 10, paddingTop: 8, fontSize: 12, color: "#64748b", textAlign: "center" },
+    dataCredit: { fontSize: 12, color: "#64748b", textAlign: "center", marginBottom: 10 },
     section: { marginBottom: 6, textAlign: "left" },
     label: { display: "block", marginBottom: 2, fontSize: 13, fontWeight: 700 },
     select: { width: "100%", padding: "6px 12px", borderRadius: 12, border: "1px solid #93c5fd", background: "white", fontSize: 16, boxSizing: "border-box" },
@@ -1371,6 +1371,7 @@ export default function TrollslandeApp() {
               </div>
               <button onClick={() => (exportIsExcel ? exportToExcel() : exportToPdf())} disabled={!currentReportHasContent} style={exportStyle}>{exportLabel}</button>
             </div>
+            <div style={styles.dataCredit}>Data hämtas ur Artportalens databas från SLU Artdatabanken</div>
             {isPortrait ? <div style={styles.rotateHint}>🔄 Vrid telefonen i sidled för bästa vy</div> : null}
 
             <div ref={reportRef} style={{ background: "#ffffff", borderRadius: 14 }}>
@@ -1473,7 +1474,6 @@ export default function TrollslandeApp() {
               </div>
             )}
             </div>
-            <div style={styles.dataCredit}>Data hämtas ur Artportalens databas från SLU Artdatabanken</div>
           </div>
           )}
         </div>
